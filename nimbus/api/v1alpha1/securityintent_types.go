@@ -20,16 +20,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Intent defines the high-level desired intent.
+type Intent struct {
+	// ID is predefined in adapter ID pool.
+	// Used by security engines to generate corresponding security policies.
+	//+kubebuilder:validation:Pattern:="^[a-zA-Z0-9]*$"
+	ID string `json:"id"`
+
+	// Action defines how the intent will be enforced.
+	// Valid actions are "Audit" and "Enforce".
+	Action string `json:"action"`
+
+	// Tags are additional metadata for categorization and grouping of intents.
+	// Facilitates searching, filtering, and management of security policies.
+	Tags []string `json:"tags,omitempty"`
+
+	// Params are key-value pairs that allows fine-tuning of intents to specific
+	// requirements.
+	Params map[string][]string `json:"params,omitempty"`
+}
 
 // SecurityIntentSpec defines the desired state of SecurityIntent
 type SecurityIntentSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of SecurityIntent. Edit securityintent_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Intent Intent `json:"intent"`
 }
 
 // SecurityIntentStatus defines the observed state of SecurityIntent
@@ -40,6 +53,7 @@ type SecurityIntentStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster
 
 // SecurityIntent is the Schema for the securityintents API
 type SecurityIntent struct {

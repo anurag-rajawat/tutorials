@@ -10,7 +10,6 @@ repo: github.com/anurag-rajawat/tutorials/nimbus
 resources:
 - api:
     crdVersion: v1
-    namespaced: true
   controller: true
   domain: security.nimbus.com
   group: intent

@@ -20,16 +20,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Rule defines a single rule within a NimbusPolicySpec
+type Rule struct {
+	// ID is a unique identifier for the rule, used by security engine adapters.
+	ID string `json:"id"`
+
+	// RuleAction specifies the action to be taken when the rule matches.
+	RuleAction string `json:"action"`
+
+	// Params is an optional map of parameters associated with the rule.
+	Params map[string][]string `json:"params,omitempty"`
+}
 
 // NimbusPolicySpec defines the desired state of NimbusPolicy
 type NimbusPolicySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// NimbusRules is a list of rules that define the policy.
+	NimbusRules []Rule `json:"rules"`
 
-	// Foo is an example field of NimbusPolicy. Edit nimbuspolicy_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Selector specifies the workload resources that the policy applies to.
+	Selector WorkloadSelector `json:"selector"`
 }
 
 // NimbusPolicyStatus defines the observed state of NimbusPolicy

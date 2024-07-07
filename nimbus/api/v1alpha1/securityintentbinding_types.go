@@ -20,16 +20,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// MatchIntent represents an intent definition.
+type MatchIntent struct {
+	Name string `json:"name"`
+}
+
+// WorkloadSelector defines a selector for workloads based on labels.
+type WorkloadSelector struct {
+	MatchLabels map[string]string `json:"matchLabels"`
+}
 
 // SecurityIntentBindingSpec defines the desired state of SecurityIntentBinding
 type SecurityIntentBindingSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of SecurityIntentBinding. Edit securityintentbinding_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Intents  []MatchIntent    `json:"intents"`
+	Selector WorkloadSelector `json:"selector"`
 }
 
 // SecurityIntentBindingStatus defines the observed state of SecurityIntentBinding
