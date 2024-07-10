@@ -18,13 +18,18 @@ package controller
 
 import (
 	"context"
+	"errors"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	intentv1alpha1 "github.com/anurag-rajawat/tutorials/nimbus/api/v1alpha1"
+	"github.com/anurag-rajawat/tutorials/nimbus/pkg/builder"
+	buildererrors "github.com/anurag-rajawat/tutorials/nimbus/pkg/utils/errors"
 )
 
 // SecurityIntentBindingReconciler reconciles a SecurityIntentBinding object
@@ -39,17 +44,25 @@ type SecurityIntentBindingReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the SecurityIntentBinding object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.2/pkg/reconcile
 func (r *SecurityIntentBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var securityIntentBinding intentv1alpha1.SecurityIntentBinding
+	err := r.Get(ctx, req.NamespacedName, &securityIntentBinding)
+	if err != nil {
+		if client.IgnoreNotFound(err) != nil {
+			logger.Error(err, "failed to fetch SecurityIntentBinding", "securityIntentBinding.name", req.Name, "securityIntentBinding.namespace", req.Namespace)
+			return ctrl.Result{}, err
+		}
+		logger.Info("SecurityIntentBinding not found. Ignoring since object must be deleted", "securityIntentBinding.name", req.Name, "securityIntentBinding.namespace", req.Namespace)
+		return ctrl.Result{}, nil
+	}
+
+	logger.Info("reconciling SecurityIntentBinding", "securityIntentBinding.name", req.Name, "securityIntentBinding.namespace", req.Namespace)
+
+	if err = r.createOrUpdateNimbusPolicy(ctx, securityIntentBinding); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -59,4 +72,54 @@ func (r *SecurityIntentBindingReconciler) SetupWithManager(mgr ctrl.Manager) err
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&intentv1alpha1.SecurityIntentBinding{}).
 		Complete(r)
+}
+
+func (r *SecurityIntentBindingReconciler) createOrUpdateNimbusPolicy(ctx context.Context, securityIntentBinding intentv1alpha1.SecurityIntentBinding) error {
+	logger := log.FromContext(ctx)
+
+	nimbusPolicyToCreate, err := builder.BuildNimbusPolicy(ctx, r.Client, securityIntentBinding)
+	if err != nil {
+		if errors.Is(err, buildererrors.ErrSecurityIntentsNotFound) {
+			logger.Info("aborted NimbusPolicy creation, since no SecurityIntents were found")
+			return nil
+		}
+		return err
+	}
+
+	var nimbusPolicy intentv1alpha1.NimbusPolicy
+	err = r.Get(ctx, types.NamespacedName{Name: securityIntentBinding.Name, Namespace: securityIntentBinding.Namespace}, &nimbusPolicy)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return r.createNimbusPolicy(ctx, nimbusPolicyToCreate)
+		}
+		logger.Error(err, "failed to fetch NimbusPolicy", "nimbusPolicy.name", securityIntentBinding.Name, "nimbusPolicy.namespace", securityIntentBinding.Namespace)
+		return err
+	}
+
+	return r.updateNimbusPolicy(ctx, nimbusPolicy, nimbusPolicyToCreate)
+}
+
+func (r *SecurityIntentBindingReconciler) createNimbusPolicy(ctx context.Context, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) error {
+	logger := log.FromContext(ctx)
+
+	err := r.Create(ctx, nimbusPolicyToCreate)
+	if err != nil {
+		logger.Error(err, "failed to create NimbusPolicy", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
+		return err
+	}
+
+	return nil
+}
+
+func (r *SecurityIntentBindingReconciler) updateNimbusPolicy(ctx context.Context, existingNimbusPolicy intentv1alpha1.NimbusPolicy, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) error {
+	logger := log.FromContext(ctx)
+
+	nimbusPolicyToCreate.ResourceVersion = existingNimbusPolicy.ResourceVersion
+	err := r.Update(ctx, nimbusPolicyToCreate)
+	if err != nil {
+		logger.Error(err, "failed to update NimbusPolicy", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
+		return err
+	}
+
+	return nil
 }
