@@ -5,6 +5,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	intentv1alpha1 "github.com/anurag-rajawat/tutorials/nimbus/api/v1alpha1"
@@ -41,6 +42,11 @@ func BuildNimbusPolicy(ctx context.Context, k8sClient client.Client, securityInt
 			Selector:    securityIntentBinding.Spec.Selector,
 		},
 	}
+
+	if err := ctrl.SetControllerReference(&securityIntentBinding, nimbusPolicy, k8sClient.Scheme()); err != nil {
+		return nil, err
+	}
+
 	return nimbusPolicy, nil
 }
 

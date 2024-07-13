@@ -71,6 +71,7 @@ func (r *SecurityIntentBindingReconciler) Reconcile(ctx context.Context, req ctr
 func (r *SecurityIntentBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&intentv1alpha1.SecurityIntentBinding{}).
+		Owns(&intentv1alpha1.NimbusPolicy{}).
 		Complete(r)
 }
 
