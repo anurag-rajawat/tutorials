@@ -17,7 +17,9 @@ limitations under the License.
 package controller
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -109,11 +111,18 @@ func (r *SecurityIntentBindingReconciler) createNimbusPolicy(ctx context.Context
 		return err
 	}
 
+	logger.V(2).Info("nimbusPolicy created", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
 	return nil
 }
 
 func (r *SecurityIntentBindingReconciler) updateNimbusPolicy(ctx context.Context, existingNimbusPolicy intentv1alpha1.NimbusPolicy, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) error {
 	logger := log.FromContext(ctx)
+
+	existingNimbusPolicySpecBytes, _ := json.Marshal(nimbusPolicyToCreate.Spec)
+	newNimbusPolicySpecBytes, _ := json.Marshal(nimbusPolicyToCreate.Spec)
+	if bytes.Equal(existingNimbusPolicySpecBytes, newNimbusPolicySpecBytes) {
+		return nil
+	}
 
 	nimbusPolicyToCreate.ResourceVersion = existingNimbusPolicy.ResourceVersion
 	err := r.Update(ctx, nimbusPolicyToCreate)
@@ -122,5 +131,6 @@ func (r *SecurityIntentBindingReconciler) updateNimbusPolicy(ctx context.Context
 		return err
 	}
 
+	logger.V(2).Info("nimbusPolicy updated", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
 	return nil
 }
