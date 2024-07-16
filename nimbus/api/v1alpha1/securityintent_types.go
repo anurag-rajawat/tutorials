@@ -53,7 +53,7 @@ type SecurityIntentStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:scope=Cluster,shortName=si
 
 // SecurityIntent is the Schema for the securityintents API
 type SecurityIntent struct {

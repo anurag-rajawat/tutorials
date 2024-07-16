@@ -11,6 +11,8 @@ spec:
     kind: NimbusPolicy
     listKind: NimbusPolicyList
     plural: nimbuspolicies
+    shortNames:
+    - np
     singular: nimbuspolicy
   scope: Namespaced
   versions:

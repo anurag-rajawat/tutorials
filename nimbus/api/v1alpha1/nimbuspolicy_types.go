@@ -49,6 +49,7 @@ type NimbusPolicyStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=np
 
 // NimbusPolicy is the Schema for the nimbuspolicies API
 type NimbusPolicy struct {
