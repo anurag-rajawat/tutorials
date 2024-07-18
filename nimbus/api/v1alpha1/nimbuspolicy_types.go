@@ -43,13 +43,17 @@ type NimbusPolicySpec struct {
 
 // NimbusPolicyStatus defines the observed state of NimbusPolicy
 type NimbusPolicyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Status                string   `json:"status"`
+	GeneratedPoliciesName []string `json:"policiesName,omitempty"`
+	CountOfPolicies       int32    `json:"policies,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=np
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Policies",type="integer",JSONPath=".status.policies"
 
 // NimbusPolicy is the Schema for the nimbuspolicies API
 type NimbusPolicy struct {

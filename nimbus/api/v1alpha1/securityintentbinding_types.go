@@ -38,13 +38,19 @@ type SecurityIntentBindingSpec struct {
 
 // SecurityIntentBindingStatus defines the observed state of SecurityIntentBinding
 type SecurityIntentBindingStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Status              string   `json:"status"`
+	BoundIntents        []string `json:"boundIntents,omitempty"`
+	CountOfBoundIntents int32    `json:"countOfBoundIntents,omitempty"`
+	NimbusPolicy        string   `json:"nimbusPolicy,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName=sib
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Intents",type="integer",JSONPath=".status.countOfBoundIntents"
+// +kubebuilder:printcolumn:name="NimbusPolicy",type="string",JSONPath=".status.nimbusPolicy"
 
 // SecurityIntentBinding is the Schema for the securityintentbindings API
 type SecurityIntentBinding struct {

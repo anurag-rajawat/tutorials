@@ -16,7 +16,17 @@ spec:
     singular: nimbuspolicy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.policies
+      name: Policies
+      type: integer
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: NimbusPolicy is the Schema for the nimbuspolicies API
@@ -84,6 +94,18 @@ spec:
             type: object
           status:
             description: NimbusPolicyStatus defines the observed state of NimbusPolicy
+            properties:
+              policies:
+                format: int32
+                type: integer
+              policiesName:
+                items:
+                  type: string
+                type: array
+              status:
+                type: string
+            required:
+            - status
             type: object
         type: object
     served: true

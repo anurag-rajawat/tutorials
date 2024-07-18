@@ -62,8 +62,21 @@ func (r *SecurityIntentBindingReconciler) Reconcile(ctx context.Context, req ctr
 
 	logger.Info("reconciling SecurityIntentBinding", "securityIntentBinding.name", req.Name, "securityIntentBinding.namespace", req.Namespace)
 
-	if err = r.createOrUpdateNimbusPolicy(ctx, securityIntentBinding); err != nil {
+	nimbusPolicy, err := r.createOrUpdateNimbusPolicy(ctx, securityIntentBinding)
+	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	if nimbusPolicy != nil {
+		if err = r.updateNpStatus(ctx, nimbusPolicy); err != nil {
+			logger.Error(err, "failed to update NimbusPolicy status", "nimbusPolicy.Name", nimbusPolicy.Name, "nimbusPolicy.Namespace", nimbusPolicy.Namespace)
+			return ctrl.Result{}, err
+		}
+
+		if err = r.updateSibStatusWithBoundNpAndSisInfo(ctx, &securityIntentBinding, nimbusPolicy); err != nil {
+			logger.Error(err, "failed to update SecurityIntentBinding status", "securityIntentBinding.name", req.Name, "securityIntentBinding.namespace", req.Namespace)
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -77,16 +90,16 @@ func (r *SecurityIntentBindingReconciler) SetupWithManager(mgr ctrl.Manager) err
 		Complete(r)
 }
 
-func (r *SecurityIntentBindingReconciler) createOrUpdateNimbusPolicy(ctx context.Context, securityIntentBinding intentv1alpha1.SecurityIntentBinding) error {
+func (r *SecurityIntentBindingReconciler) createOrUpdateNimbusPolicy(ctx context.Context, securityIntentBinding intentv1alpha1.SecurityIntentBinding) (*intentv1alpha1.NimbusPolicy, error) {
 	logger := log.FromContext(ctx)
 
 	nimbusPolicyToCreate, err := builder.BuildNimbusPolicy(ctx, r.Client, securityIntentBinding)
 	if err != nil {
 		if errors.Is(err, buildererrors.ErrSecurityIntentsNotFound) {
 			logger.Info("aborted NimbusPolicy creation, since no SecurityIntents were found")
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
 
 	var nimbusPolicy intentv1alpha1.NimbusPolicy
@@ -96,41 +109,68 @@ func (r *SecurityIntentBindingReconciler) createOrUpdateNimbusPolicy(ctx context
 			return r.createNimbusPolicy(ctx, nimbusPolicyToCreate)
 		}
 		logger.Error(err, "failed to fetch NimbusPolicy", "nimbusPolicy.name", securityIntentBinding.Name, "nimbusPolicy.namespace", securityIntentBinding.Namespace)
-		return err
+		return nil, err
 	}
 
-	return r.updateNimbusPolicy(ctx, nimbusPolicy, nimbusPolicyToCreate)
+	return r.updateNimbusPolicy(ctx, &nimbusPolicy, nimbusPolicyToCreate)
 }
 
-func (r *SecurityIntentBindingReconciler) createNimbusPolicy(ctx context.Context, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) error {
+func (r *SecurityIntentBindingReconciler) createNimbusPolicy(ctx context.Context, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) (*intentv1alpha1.NimbusPolicy, error) {
 	logger := log.FromContext(ctx)
 
 	err := r.Create(ctx, nimbusPolicyToCreate)
 	if err != nil {
 		logger.Error(err, "failed to create NimbusPolicy", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
-		return err
+		return nil, err
 	}
 
 	logger.V(2).Info("nimbusPolicy created", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
-	return nil
+	return nimbusPolicyToCreate, nil
 }
 
-func (r *SecurityIntentBindingReconciler) updateNimbusPolicy(ctx context.Context, existingNimbusPolicy intentv1alpha1.NimbusPolicy, nimbusPolicyToCreate *intentv1alpha1.NimbusPolicy) error {
+func (r *SecurityIntentBindingReconciler) updateNimbusPolicy(ctx context.Context, existingNimbusPolicy *intentv1alpha1.NimbusPolicy, updatedNimbusPolicy *intentv1alpha1.NimbusPolicy) (*intentv1alpha1.NimbusPolicy, error) {
 	logger := log.FromContext(ctx)
 
-	existingNimbusPolicySpecBytes, _ := json.Marshal(nimbusPolicyToCreate.Spec)
-	newNimbusPolicySpecBytes, _ := json.Marshal(nimbusPolicyToCreate.Spec)
+	existingNimbusPolicySpecBytes, _ := json.Marshal(existingNimbusPolicy.Spec)
+	newNimbusPolicySpecBytes, _ := json.Marshal(updatedNimbusPolicy.Spec)
 	if bytes.Equal(existingNimbusPolicySpecBytes, newNimbusPolicySpecBytes) {
-		return nil
+		return existingNimbusPolicy, nil
 	}
 
-	nimbusPolicyToCreate.ResourceVersion = existingNimbusPolicy.ResourceVersion
-	err := r.Update(ctx, nimbusPolicyToCreate)
+	updatedNimbusPolicy.ResourceVersion = existingNimbusPolicy.ResourceVersion
+	err := r.Update(ctx, updatedNimbusPolicy)
 	if err != nil {
-		logger.Error(err, "failed to update NimbusPolicy", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
-		return err
+		logger.Error(err, "failed to update NimbusPolicy", "nimbusPolicy.name", updatedNimbusPolicy.Name, "nimbusPolicy.namespace", updatedNimbusPolicy.Namespace)
+		return nil, err
 	}
 
-	logger.V(2).Info("nimbusPolicy updated", "nimbusPolicy.name", nimbusPolicyToCreate.Name, "nimbusPolicy.namespace", nimbusPolicyToCreate.Namespace)
-	return nil
+	logger.V(2).Info("nimbusPolicy updated", "nimbusPolicy.name", updatedNimbusPolicy.Name, "nimbusPolicy.namespace", updatedNimbusPolicy.Namespace)
+	return updatedNimbusPolicy, nil
+}
+
+func (r *SecurityIntentBindingReconciler) updateNpStatus(ctx context.Context, nimbusPolicy *intentv1alpha1.NimbusPolicy) error {
+	nimbusPolicy.Status = intentv1alpha1.NimbusPolicyStatus{
+		Status: StatusCreated,
+	}
+	return r.Status().Update(ctx, nimbusPolicy)
+}
+
+func (r *SecurityIntentBindingReconciler) updateSibStatusWithBoundNpAndSisInfo(ctx context.Context, existingSib *intentv1alpha1.SecurityIntentBinding, existingNp *intentv1alpha1.NimbusPolicy) error {
+	existingSib.Status.Status = StatusCreated
+	existingSib.Status.NimbusPolicy = existingNp.Name
+	existingSib.Status.CountOfBoundIntents = int32(len(existingNp.Spec.NimbusRules))
+	existingSib.Status.BoundIntents = r.getBoundIntents(ctx, existingSib.Spec.Intents)
+	return r.Status().Update(ctx, existingSib)
+}
+
+func (r *SecurityIntentBindingReconciler) getBoundIntents(ctx context.Context, intents []intentv1alpha1.MatchIntent) []string {
+	var boundIntentsName []string
+	for _, intent := range intents {
+		var currIntent intentv1alpha1.SecurityIntent
+		if err := r.Get(ctx, types.NamespacedName{Name: intent.Name}, &currIntent); err != nil {
+			continue
+		}
+		boundIntentsName = append(boundIntentsName, currIntent.Name)
+	}
+	return boundIntentsName
 }

@@ -47,13 +47,16 @@ type SecurityIntentSpec struct {
 
 // SecurityIntentStatus defines the observed state of SecurityIntent
 type SecurityIntentStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Action string `json:"action"`
+	Status string `json:"status"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=si
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:printcolumn:name="Action",type="string",JSONPath=".spec.intent.action",priority=1
 
 // SecurityIntent is the Schema for the securityintents API
 type SecurityIntent struct {

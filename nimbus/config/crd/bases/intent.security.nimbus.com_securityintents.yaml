@@ -16,7 +16,18 @@ spec:
     singular: securityintent
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .spec.intent.action
+      name: Action
+      priority: 1
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: SecurityIntent is the Schema for the securityintents API
@@ -80,6 +91,14 @@ spec:
             type: object
           status:
             description: SecurityIntentStatus defines the observed state of SecurityIntent
+            properties:
+              action:
+                type: string
+              status:
+                type: string
+            required:
+            - action
+            - status
             type: object
         type: object
     served: true

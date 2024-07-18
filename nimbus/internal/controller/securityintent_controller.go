@@ -54,6 +54,12 @@ func (r *SecurityIntentReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	logger.Info("reconciling SecurityIntent", "securityIntent", req.Name)
+
+	if err = r.updateStatus(ctx, &securityIntent); err != nil {
+		logger.Error(err, "failed to update SecurityIntent status", "securityIntent.name", req.Name)
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -62,4 +68,12 @@ func (r *SecurityIntentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&intentv1alpha1.SecurityIntent{}).
 		Complete(r)
+}
+
+func (r *SecurityIntentReconciler) updateStatus(ctx context.Context, existingSecurityIntent *intentv1alpha1.SecurityIntent) error {
+	existingSecurityIntent.Status = intentv1alpha1.SecurityIntentStatus{
+		Action: existingSecurityIntent.Spec.Intent.Action,
+		Status: StatusCreated,
+	}
+	return r.Status().Update(ctx, existingSecurityIntent)
 }
