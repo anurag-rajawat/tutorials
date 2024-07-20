@@ -1,0 +1,29 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: nimbuspolicy-update
+spec:
+  description: This test validates that direct updates to a NimbusPolicy are ignored to prevent unintended modifications.
+
+  steps:
+    - name: Create a SecurityIntent and SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../original-np.yaml
+
+    - name: Update existing NimbusPolicy
+      try:
+        - patch:
+            file: updated-np.yaml
+
+    - name: Assert direct changes to NimbusPolicy are discarded
+      try:
+        - assert:
+            file: ../original-np.yaml

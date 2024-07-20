@@ -1,0 +1,29 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: nimbuspolicy-delete
+spec:
+  description: This test validates whether a NimbusPolicy is re-created on manually deletion.
+
+  steps:
+    - name: Create a SecurityIntent and SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../original-np.yaml
+
+    - name: Delete existing NimbusPolicy
+      try:
+        - delete:
+            file: ../original-np.yaml
+
+    - name: Assert NimbusPolicy re-creation after deletion
+      try:
+        - assert:
+            file: ../original-np.yaml

@@ -1,0 +1,11 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: NimbusPolicy
+metadata:
+  name: package-mgrs-binding
+spec:
+  rules:
+    - action: Audit
+      id: pkgMgrs
+  selector:
+    matchLabels:
+      env: demo

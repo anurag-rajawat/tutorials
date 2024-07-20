@@ -1,0 +1,8 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: SecurityIntentBinding
+metadata:
+  name: package-mgrs-binding
+spec:
+  selector:
+    matchLabels:
+      env: demo

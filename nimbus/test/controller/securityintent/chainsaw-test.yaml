@@ -1,0 +1,19 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: securityintent-creation
+spec:
+  description: |
+    This test validates that the created SecurityIntent's status subresource contains the action 
+    fields with the corresponding intent action.
+
+  steps:
+    - name: Create a SecurityIntent
+      try:
+        - apply:
+            file: ../manifest/security-intent.yaml
+
+    - name: Assert status
+      try:
+        - assert:
+            file: status.yaml

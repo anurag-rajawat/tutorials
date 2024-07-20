@@ -1,0 +1,43 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: securityintentbinding-delete
+spec:
+  description: |
+    This test validates NimbusPolicy deletion when the parent SecurityIntentBinding gets deleted.
+
+  steps:
+    - name: Create a SecurityIntent
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+
+    - name: Create a SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy-to-assert.yaml
+
+    - name: Assert SecurityIntentBinding's status subresource
+      description: |
+        Verify the created SecurityIntentBinding status subresource includes the number and names of bound intents, 
+        along with the generated NimbusPolicy name.
+      try:
+        - assert:
+            file: ../sib-status-to-assert.yaml
+
+    - name: Delete the created SecurityIntentBinding
+      try:
+        - delete:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert the NimbusPolicy deletion
+      try:
+        - script:
+            content: kubectl get np package-mgrs-binding -n $NAMESPACE
+            check:
+              ($error != null): true

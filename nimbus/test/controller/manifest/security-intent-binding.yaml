@@ -1,0 +1,12 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: SecurityIntentBinding
+metadata:
+  name: package-mgrs-binding
+spec:
+  # Names of SecurityIntents to be applied
+  intents:
+    - name: package-mgrs # Reference the intended SecurityIntent resource
+  selector:
+    matchLabels:
+      env: prod
+      app: web

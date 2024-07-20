@@ -1,0 +1,17 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: SecurityIntentBinding
+metadata:
+  name: package-mgrs-binding
+spec:
+  intents:
+    - name: package-mgrs
+  selector:
+    matchLabels:
+      app: web
+      env: prod
+status:
+  boundIntents:
+    - package-mgrs
+  countOfBoundIntents: 1
+  nimbusPolicy: package-mgrs-binding
+  status: Created

@@ -1,0 +1,32 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: securityintentbinding-creation
+spec:
+  description: |
+    This test validates the automated creation of a NimbusPolicy when a SecurityIntent 
+    and SecurityIntentBinding are created.
+
+  steps:
+    - name: Create a SecurityIntent
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+
+    - name: Create a SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy-to-assert.yaml
+
+    - name: Assert SecurityIntentBinding's status subresource
+      description: |
+        Verify the created SecurityIntentBinding status subresource includes the number and names of bound intents, 
+        along with the generated NimbusPolicy name.
+      try:
+        - assert:
+            file: ../sib-status-to-assert.yaml
