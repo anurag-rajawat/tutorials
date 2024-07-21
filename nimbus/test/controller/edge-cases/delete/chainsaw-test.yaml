@@ -1,0 +1,44 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: securityintent-deletion-after-creation-of-nimbuspolicy
+spec:
+  description: |
+    This test verifies that if a SecurityIntent is the only one referenced in a SecurityIntentBinding, and that
+    SecurityIntent is deleted, the related NimbusPolicy is also automatically deleted.
+
+  steps:
+    - name: Create a SecurityIntent
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+
+    - name: Create a SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy-to-assert.yaml
+
+    - name: Delete referenced created SecurityIntent
+      try:
+        - delete:
+            file: ../../manifest/security-intent.yaml
+
+    - name: Assert NimbusPolicy deletion
+      try:
+        - script:
+            content: kubectl get np package-mgrs-binding -n $NAMESPACE
+            check:
+              ($error != null): true
+
+    - name: Assert SecurityIntentBinding's status subresource
+      description: |
+        Verify that the created SecurityIntentBinding's status subresource does not include the number
+        and names of bound intents, and does not have a NimbusPolicy name.
+      try:
+        - assert:
+            file: sib-status-after-si-deletion.yaml

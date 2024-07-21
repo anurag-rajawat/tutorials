@@ -1,0 +1,42 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: securityintentbinding-and-securityintent-update
+spec:
+  description: |
+    This test verifies that modifying a SecurityIntent triggers the updates in corresponding SecurityIntentBinding's 
+    status subresource and related NimbusPolicy.
+
+  steps:
+    - name: Create a SecurityIntent
+      try:
+        - apply:
+            file: ../../manifest/security-intent.yaml
+
+    - name: Create a SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../manifest/security-intent-binding.yaml
+
+    - name: Assert SecurityIntentBinding's status subresource
+      description: |
+        Verify the created SecurityIntentBinding status subresource includes the number and names of bound intents, 
+        along with the generated NimbusPolicy name.
+      try:
+        - assert:
+            file: ../sib-status-to-assert.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy-to-assert.yaml
+
+    - name: Update referenced SecurityIntent
+      try:
+        - patch:
+            file: updated-security-intent.yaml
+
+    - name: Assert changes to NimbusPolicy
+      try:
+        - assert:
+            file: updated-nimbus-policy-to-assert.yaml
