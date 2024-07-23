@@ -40,8 +40,8 @@ type SecurityIntentBindingSpec struct {
 type SecurityIntentBindingStatus struct {
 	Status              string   `json:"status"`
 	BoundIntents        []string `json:"boundIntents,omitempty"`
-	CountOfBoundIntents int32    `json:"countOfBoundIntents,omitempty"`
-	NimbusPolicy        string   `json:"nimbusPolicy,omitempty"`
+	CountOfBoundIntents int32    `json:"countOfBoundIntents"`
+	NimbusPolicy        string   `json:"nimbusPolicy"`
 }
 
 // +kubebuilder:object:root=true

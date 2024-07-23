@@ -3,7 +3,6 @@ kind: SecurityIntentBinding
 metadata:
   name: package-mgrs-binding
 status:
-  boundIntents: [  ]
-  countOfBoundIntents: 0
   nimbusPolicy: ""
+  countOfBoundIntents: 0
   status: Created

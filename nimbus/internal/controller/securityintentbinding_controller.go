@@ -27,7 +27,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	intentv1alpha1 "github.com/anurag-rajawat/tutorials/nimbus/api/v1alpha1"
 	"github.com/anurag-rajawat/tutorials/nimbus/pkg/builder"
@@ -87,6 +89,9 @@ func (r *SecurityIntentBindingReconciler) SetupWithManager(mgr ctrl.Manager) err
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&intentv1alpha1.SecurityIntentBinding{}).
 		Owns(&intentv1alpha1.NimbusPolicy{}).
+		Watches(&intentv1alpha1.SecurityIntent{},
+			handler.EnqueueRequestsFromMapFunc(r.findBindingsMatchingWithIntent),
+		).
 		Complete(r)
 }
 
@@ -96,7 +101,19 @@ func (r *SecurityIntentBindingReconciler) createOrUpdateNimbusPolicy(ctx context
 	nimbusPolicyToCreate, err := builder.BuildNimbusPolicy(ctx, r.Client, securityIntentBinding)
 	if err != nil {
 		if errors.Is(err, buildererrors.ErrSecurityIntentsNotFound) {
-			logger.Info("aborted NimbusPolicy creation, since no SecurityIntents were found")
+			// Since the SecurityIntent(s) referenced in SecurityIntentBinding spec don't
+			// exist, so delete NimbusPolicy if it exists.
+			if err = r.deleteNimbusPolicyIfExists(ctx, securityIntentBinding.Name, securityIntentBinding.Namespace); err != nil {
+				return nil, err
+			}
+
+			// When a NimbusPolicy is deleted, it implies the referenced SecurityIntent(s)
+			// is(are) no longer exist. Therefore, update the status subresource of the
+			// associated SecurityIntentBinding to reflect the latest details.
+			if err = r.removeNpAndSisDetailsFromSibStatus(ctx, securityIntentBinding.Name, securityIntentBinding.Namespace); err != nil {
+				return nil, err
+			}
+
 			return nil, nil
 		}
 		return nil, err
@@ -173,4 +190,61 @@ func (r *SecurityIntentBindingReconciler) getBoundIntents(ctx context.Context, i
 		boundIntentsName = append(boundIntentsName, currIntent.Name)
 	}
 	return boundIntentsName
+}
+
+// findBindingsMatchingWithIntent finds SecurityIntentBindings that reference given SecurityIntent.
+func (r *SecurityIntentBindingReconciler) findBindingsMatchingWithIntent(ctx context.Context, securityIntent client.Object) []reconcile.Request {
+	logger := log.FromContext(ctx)
+	var requests []reconcile.Request
+
+	var bindings intentv1alpha1.SecurityIntentBindingList
+	if err := r.List(ctx, &bindings); err != nil {
+		logger.Error(err, "failed to list SecurityIntentBinding")
+		return requests
+	}
+
+	for _, binding := range bindings.Items {
+		for _, intent := range binding.Spec.Intents {
+			if intent.Name == securityIntent.GetName() {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      binding.Name,
+						Namespace: binding.Namespace,
+					},
+				})
+				break
+			}
+		}
+	}
+
+	return requests
+}
+
+func (r *SecurityIntentBindingReconciler) deleteNimbusPolicyIfExists(ctx context.Context, name, namespace string) error {
+	var nimbusPolicyToDelete intentv1alpha1.NimbusPolicy
+	if err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &nimbusPolicyToDelete); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	if err := r.Delete(ctx, &nimbusPolicyToDelete); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *SecurityIntentBindingReconciler) removeNpAndSisDetailsFromSibStatus(ctx context.Context, bindingName, namespace string) error {
+	var securityIntentBinding intentv1alpha1.SecurityIntentBinding
+	if err := r.Get(ctx, types.NamespacedName{Name: bindingName, Namespace: namespace}, &securityIntentBinding); err != nil {
+		return err
+	}
+
+	securityIntentBinding.Status.NimbusPolicy = ""
+	securityIntentBinding.Status.CountOfBoundIntents = 0
+	securityIntentBinding.Status.BoundIntents = []string{}
+
+	return r.Status().Update(ctx, &securityIntentBinding)
 }
