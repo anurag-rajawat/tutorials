@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	intentv1alpha1 "github.com/anurag-rajawat/tutorials/nimbus/api/v1alpha1"
@@ -92,6 +93,7 @@ func (r *SecurityIntentBindingReconciler) SetupWithManager(mgr ctrl.Manager) err
 		Watches(&intentv1alpha1.SecurityIntent{},
 			handler.EnqueueRequestsFromMapFunc(r.findBindingsMatchingWithIntent),
 		).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Complete(r)
 }
 
