@@ -1,0 +1,63 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: nimbus-kubearmor
+    app.kubernetes.io/part-of: package-mgrs-binding-nimbuspolicy
+  name: package-mgrs-binding-pkgmgrs
+  ownerReferences:
+    - apiVersion: intent.security.nimbus.com/v1alpha1
+      blockOwnerDeletion: true
+      controller: true
+      kind: NimbusPolicy
+      name: package-mgrs-binding
+spec:
+  capabilities: {}
+  file: {}
+  message: Alert! Execution of package management process inside container is detected
+  network: {}
+  process:
+    action: Block
+    matchPaths:
+      - path: /usr/bin/apt
+      - path: /usr/bin/apt-get
+      - path: /bin/apt-get
+      - path: /bin/apt
+      - path: /sbin/apk
+      - path: /usr/bin/dpkg
+      - path: /bin/dpkg
+      - path: /usr/bin/gdebi
+      - path: /bin/gdebi
+      - path: /usr/bin/make
+      - path: /bin/make
+      - path: /usr/bin/yum
+      - path: /bin/yum
+      - path: /usr/bin/rpm
+      - path: /bin/rpm
+      - path: /usr/bin/dnf
+      - path: /bin/dnf
+      - path: /usr/bin/pacman
+      - path: /usr/sbin/pacman
+      - path: /bin/pacman
+      - path: /sbin/pacman
+      - path: /usr/bin/makepkg
+      - path: /usr/sbin/makepkg
+      - path: /bin/makepkg
+      - path: /sbin/makepkg
+      - path: /usr/bin/yaourt
+      - path: /usr/sbin/yaourt
+      - path: /bin/yaourt
+      - path: /sbin/yaourt
+      - path: /usr/bin/zypper
+      - path: /bin/zypper
+    severity: 5
+  selector:
+    matchLabels:
+      app: web
+      env: prod
+  syscalls: {}
+  tags:
+    - NIST
+    - CM-7(5)
+    - SI-4
+    - Package Manager

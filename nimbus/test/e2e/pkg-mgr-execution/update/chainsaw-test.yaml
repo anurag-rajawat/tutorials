@@ -1,0 +1,69 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pkg-mgr-exec-intent-binding-update
+spec:
+  description: |
+    This test validates the following:
+    - If a SecurityIntent or SecurityIntentBinding is updated, Nimbus updates the
+      corresponding NimbusPolicy. The Nimbus adapter then updates the corresponding
+      policies accordingly.
+
+    - If an adapter policy is manually altered for any reason, those changes are
+      discarded.
+
+  steps:
+    - name: Create PacakgeManagerExecution SecurityIntent and SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../../controller/manifest/security-intent.yaml
+        - apply:
+            file: ../../../controller/manifest/security-intent-binding.yaml
+
+    - name: Assert SecurityIntentBinding's status subresource
+      try:
+        - assert:
+            file: ../sib-status.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy.yaml
+
+    - name: Assert KubeArmor policy creation
+      try:
+        - assert:
+            file: ../ksp.yaml
+
+    - name: Assert NimbusPolicy's status subresource
+      description: |
+        Verify the NimbusPolicy's status subresource includes the number and names of
+        created security engine policies.
+      try:
+        - assert:
+            file: ../np-status.yaml
+
+    - name: Update referenced SecurityIntent
+      try:
+        - patch:
+            file: updated-security-intent.yaml
+
+    - name: Assert NimbusPolicy changes
+      try:
+        - assert:
+            file: updated-nimbus-policy-to-assert.yaml
+
+    - name: Assert KubeArmor policy changes
+      try:
+        - assert:
+            file: updated-ksp-to-assert.yaml
+
+    - name: Manually update the managed KubeArmor policy
+      try:
+        - patch:
+            file: updated-ksp.yaml
+
+    - name: Assert manual changes to KubeArmor policy are discarded
+      try:
+        - assert:
+            file: updated-ksp-to-assert.yaml

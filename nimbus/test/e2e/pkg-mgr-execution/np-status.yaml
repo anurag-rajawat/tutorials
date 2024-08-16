@@ -1,0 +1,15 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: NimbusPolicy
+metadata:
+  name: package-mgrs-binding
+  ownerReferences:
+    - apiVersion: intent.security.nimbus.com/v1alpha1
+      blockOwnerDeletion: true
+      controller: true
+      kind: SecurityIntentBinding
+      name: package-mgrs-binding
+status:
+  status: Created
+  policies: 1
+  policiesName:
+    - package-mgrs-binding-pkgmgrs

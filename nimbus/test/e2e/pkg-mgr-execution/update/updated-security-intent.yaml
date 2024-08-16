@@ -1,0 +1,7 @@
+apiVersion: intent.security.nimbus.com/v1alpha1
+kind: SecurityIntent
+metadata:
+  name: package-mgrs
+spec:
+  intent:
+    action: Audit # Changed from `Enforce` to `Audit`

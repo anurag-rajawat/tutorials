@@ -1,0 +1,7 @@
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: package-mgrs-binding-pkgmgrs
+spec:
+  process:
+    action: Allow # Changed to Audit from Block

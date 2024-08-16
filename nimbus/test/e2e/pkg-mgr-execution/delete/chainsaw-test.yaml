@@ -1,0 +1,74 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pkg-mgr-exec-intent-binding-update
+spec:
+  description: |
+    This test validates the following:
+    - If an adapter policy is deleted manually, it is automatically recreated.
+
+    - When a SecurityIntent or SecurityIntentBinding is deleted, Nimbus deletes the
+      corresponding NimbusPolicy. The Nimbus adapter follows by deleting the
+      associated policies.
+
+  steps:
+    - name: Create PacakgeManagerExecution SecurityIntent and SecurityIntentBinding
+      try:
+        - apply:
+            file: ../../../controller/manifest/security-intent.yaml
+        - apply:
+            file: ../../../controller/manifest/security-intent-binding.yaml
+
+    - name: Assert SecurityIntentBinding's status subresource
+      try:
+        - assert:
+            file: ../sib-status.yaml
+
+    - name: Assert NimbusPolicy creation
+      try:
+        - assert:
+            file: ../nimbus-policy.yaml
+
+    - name: Assert KubeArmor policy creation
+      try:
+        - assert:
+            file: ../ksp.yaml
+
+    - name: Assert NimbusPolicy's status subresource
+      description: |
+        Verify the NimbusPolicy's status subresource includes the number and names of
+        created security engine policies.
+      try:
+        - assert:
+            file: ../np-status.yaml
+
+    - name: Manually delete the managed KubeArmor policy
+      try:
+        - delete:
+            file: ../ksp.yaml
+
+    - name: Assert managed KubeArmor policy re-creation
+      try:
+        - assert:
+            file: ../ksp.yaml
+
+    - name: Delete the created SecurityIntent and SecurityIntentBinding
+      try:
+        - delete:
+            file: ../../../controller/manifest/security-intent.yaml
+        - delete:
+            file: ../../../controller/manifest/security-intent-binding.yaml
+
+    - name: Assert the NimbusPolicy deletion
+      try:
+        - script:
+            content: kubectl -n $NAMESPACE get np package-mgrs-binding
+            check:
+              ($error != null): true
+
+    - name: Assert the managed KubeArmor policy deletion
+      try:
+        - script:
+            content: kubectl get ksp package-mgrs-binding-pkgmgrs -n $NAMESPACE
+            check:
+              ($error != null): true

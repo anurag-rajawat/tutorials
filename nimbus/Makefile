@@ -62,9 +62,9 @@ test: chainsaw ## Run tests.
 	@$(LOCALBIN)/chainsaw test --test-dir=test/controller/ --config test/chainsaw-config.yaml
 
 # Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
-.PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
-test-e2e:
-	go test ./test/e2e/ -v -ginkgo.v
+.PHONY: test-e2e
+test-e2e: chainsaw ## Run the e2e tests.
+	@$(LOCALBIN)/chainsaw test --test-dir=test/e2e --config test/chainsaw-config.yaml
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter
