@@ -36,7 +36,6 @@ type SecurityIntentReconciler struct {
 
 // +kubebuilder:rbac:groups=intent.security.nimbus.com,resources=securityintents,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=intent.security.nimbus.com,resources=securityintents/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=intent.security.nimbus.com,resources=securityintents/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

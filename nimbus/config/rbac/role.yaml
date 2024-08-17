@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  name: nimbus-operator
 rules:
 - apiGroups:
   - intent.security.nimbus.com
@@ -16,12 +16,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - intent.security.nimbus.com
-  resources:
-  - securityintentbindings/finalizers
-  verbs:
-  - update
 - apiGroups:
   - intent.security.nimbus.com
   resources:
@@ -42,12 +36,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - intent.security.nimbus.com
-  resources:
-  - securityintents/finalizers
-  verbs:
-  - update
 - apiGroups:
   - intent.security.nimbus.com
   resources:

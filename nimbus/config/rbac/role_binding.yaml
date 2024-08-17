@@ -4,12 +4,12 @@ metadata:
   labels:
     app.kubernetes.io/name: nimbus
     app.kubernetes.io/managed-by: kustomize
-  name: manager-rolebinding
+  name: nimbus-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: manager-role
+  name: nimbus-operator
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
-  namespace: system
+  name: nimbus-operator
+  namespace: nimbus
