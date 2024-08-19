@@ -1,0 +1,33 @@
+replicaCount: 1
+
+image:
+  repository: anuragrajawat/nimbus
+  pullPolicy: IfNotPresent
+  tag: "v0.1"
+
+nameOverride: ""
+fullnameOverride: "nimbus-operator"
+
+serviceAccount:
+  create: true
+  automount: true
+  name: "nimbus-operator"
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
