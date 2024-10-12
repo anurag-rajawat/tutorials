@@ -1,7 +1,7 @@
 # Image URL to use all building/pushing image targets
-IMG ?= nimbus-kubearmor
+IMG ?= anuragrajawat/nimbus-kubearmor
 # Image Tag to use all building/pushing image targets
-TAG ?= latest
+TAG ?= v0.1
 
 CONTAINER_TOOL ?= docker
 BINARY ?= bin/nimbus-kubearmor
@@ -15,6 +15,7 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+.PHONY: build
 build: ## Build nimbus-kubearmor executable.
 	@go build -ldflags="-s" -o ${BINARY} cmd/main.go
 
@@ -39,9 +40,9 @@ imagex: ## Build and push container image for cross-platform support
 	- $(CONTAINER_TOOL) buildx rm project-v3-builder
 	rm Dockerfile.cross
 
-.PHONY: manifests
-manifests: controller-gen ## Generate ClusterRole.
-	$(CONTROLLER_GEN) rbac:roleName=nimbus-kubearmor-clusterrole paths="./..." output:dir=../../../deployments/nimbus-kubearmor/templates/
+.PHONY: generate
+generate: controller-gen ## Generate ClusterRole.
+	$(CONTROLLER_GEN) rbac:roleName=nimbus-kubearmor paths="./..." output:dir=../../../deployment/nimbus-kubearmor/templates/
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.

@@ -52,6 +52,11 @@ func (m *manager) run(ctx context.Context) {
 	m.wg.Wait()
 }
 
+//+kubebuilder:rbac:groups=intent.security.nimbus.com,resources=securityintentbindings,verbs=get
+//+kubebuilder:rbac:groups=intent.security.nimbus.com,resources=nimbuspolicies,verbs=get;list;watch
+//+kubebuilder:rbac:groups=intent.security.nimbus.com,resources=nimbuspolicies/status,verbs=get;update
+//+kubebuilder:rbac:groups=security.kubearmor.com,resources=kubearmorpolicies,verbs=get;create;delete;list;watch;update
+
 func Run(ctx context.Context) {
 	logger := log.FromContext(ctx)
 	scheme := runtime.NewScheme()

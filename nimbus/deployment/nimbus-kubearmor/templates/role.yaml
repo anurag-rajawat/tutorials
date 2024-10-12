@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nimbus-kubearmor
+  labels:
+        {{- include "nimbus-kubearmor.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - intent.security.nimbus.com
+    resources:
+      - nimbuspolicies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - intent.security.nimbus.com
+    resources:
+      - nimbuspolicies/status
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - intent.security.nimbus.com
+    resources:
+      - securityintentbindings
+    verbs:
+      - get
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - kubearmorpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - update
+      - watch

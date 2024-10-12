@@ -1,0 +1,37 @@
+replicaCount: 1
+
+image:
+  repository: anuragrajawat/nimbus-kubearmor
+  pullPolicy: IfNotPresent
+  tag: "v0.1"
+
+nameOverride: ""
+fullnameOverride: "nimbus-kubearmor"
+
+serviceAccount:
+  create: true
+  automount: true
+  name: "nimbus-kubearmor"
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65536
+
+resources:
+  limits:
+    cpu: 50m
+    memory: 64Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# AutoDeploy KubeArmor with default configs
+kubearmor-operator:
+  autoDeploy: true
