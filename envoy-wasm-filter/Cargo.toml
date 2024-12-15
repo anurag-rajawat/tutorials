@@ -1,0 +1,20 @@
+[package]
+name = "envoy-wasm-filter"
+version = "0.1.0"
+edition = "2021"
+authors = ["Anurag Rajawat", "anuragsinghrajawat22@gmail.com"]
+
+[lib]
+name = "httpfilter"
+path = "src/lib.rs"
+crate-type = ["cdylib"] # Tell `rust` to build a dynamic library
+
+[dependencies]
+proxy-wasm = "0.2.2"
+serde_json = "1.0.133"
+log = "0.4.22"
+serde = { version = "1.0.215", features = ["derive"] }
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"
