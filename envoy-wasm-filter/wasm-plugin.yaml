@@ -1,0 +1,19 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: http-filter
+  namespace: istio-system
+spec:
+  # Do not cause all requests to fail with 5xx.
+  # Bypass the plugin execution on plugin issues.
+  # https://istio.io/latest/docs/reference/config/proxy_extensions/wasm-plugin/#FailStrategy
+  failStrategy: FAIL_OPEN
+  match:
+    - mode: CLIENT
+  pluginConfig:
+    upstream_name: ingestion-service
+    authority: ingestion-service
+    path: /api/v1/events
+  pluginName: http-filter
+  type: HTTP
+  url: anuragrajawat/httpfilter:final # Change this to your image while trying locally

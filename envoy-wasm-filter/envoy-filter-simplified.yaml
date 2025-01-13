@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: http-filter
+  # Deploy the filter to whatever istio considers its "root" namespace so that we
+  # don't have to create the ConfigMap(s) containing the WASM filter binary,
+  # and the associated annotations/configuration for the Istio sidecar(s).
+  # https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig:~:text=No-,rootNamespace,-string
+  namespace: istio-system
+spec:
+  configPatches:
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: ADD
+        value:
+          name: ingestion-service
+          type: LOGICAL_DNS
+          connect_timeout: 1s
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: ingestion-service
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          protocol: TCP
+                          address: ingestion-service.demo # Ingestion service address running in K8s. <service-name.service-namespace>
+                          port_value: 8888

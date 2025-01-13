@@ -1,0 +1,60 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: http-filter
+spec:
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_OUTBOUND
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.wasm
+          typedConfig:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            typeUrl: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+            value:
+              config:
+                name: http-filter
+                rootId: http-filter
+                configuration: # Wasm Plugin configuration so that it can send data to our ingestion service.
+                  "@type": "type.googleapis.com/google.protobuf.StringValue"
+                  value: |
+                    {
+                        "upstream_name": "ingestion-service",
+                        "authority": "ingestion-service",
+                        "path": "/api/v1/events"
+                    }
+                vmConfig:
+                  code:
+                    local:
+                      filename: /var/local/lib/wasm-filters/httpfilter.wasm # Path to Wasm Plugin
+                  runtime: envoy.wasm.runtime.v8
+                  vmId: ingestion-service
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: ADD
+        value:
+          name: ingestion-service
+          type: LOGICAL_DNS
+          connect_timeout: 0.5s
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: ingestion-service
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          protocol: TCP
+                          address: ingestion-service.demo # Ingestion service address running in K8s. <service-name.service-namespace>
+                          port_value: 8888
